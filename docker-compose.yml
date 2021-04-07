@@ -10,7 +10,7 @@ services:
     restart: always
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-    command: '/scripts/mina-status-monitor.sh -g ${GRAPHQL_ENDPOINT:-http://mina:3085/graphql} -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
+    command: '-g ${GRAPHQL_ENDPOINT:-http://mina:3085/graphql} -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
     pid: "host"
     networks:
       - mina-network
