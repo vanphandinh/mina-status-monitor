@@ -10,12 +10,5 @@ services:
     restart: always
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-    command: '-g ${GRAPHQL_ENDPOINT:-http://mina:3085/graphql} -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
+    command: '/scripts/mina-status-monitor.sh -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
     pid: "host"
-    networks:
-      - mina-network
-
-networks:
-  mina-network:
-    name: mina-network
-    driver: bridge

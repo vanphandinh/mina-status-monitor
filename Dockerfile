@@ -7,5 +7,3 @@ RUN curl -sSL https://get.docker.com/ | sh
 WORKDIR /scripts
 COPY mina-status-monitor.sh /scripts
 RUN chmod +x /scripts/mina-status-monitor.sh
-
-ENTRYPOINT ["/scripts/mina-status-monitor.sh"]
