@@ -90,15 +90,16 @@ else
       NOW="$(date +%s)"
       TIMEBEFORENEXT="$(($NEXTPROP - $NOW))"
       TIMEBEFORENEXTMIN="$(($TIMEBEFORENEXT / $SECONDS_PER_MINUTE))"
+      echo "Remaining: $TIMEBEFORENEXTMIN minutes leff"
 
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
         echo "Stop the snark worker"
-        docker exec -it mina mina client set-snark-worker
+        docker exec -t mina mina client set-snark-worker
         ((SNARKWORKERTURNEDOFF++))
       else
         if [[ "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
-          docker exec -it mina mina client set-snark-worker --address ${SW_ADDRESS}
-          docker exec -it mina mina client set-snark-work-fee $FEE
+          docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
+          docker exec -t mina mina client set-snark-work-fee $FEE
           SNARKWORKERTURNEDOFF=0
         fi
       fi
@@ -144,9 +145,9 @@ else
     else
       ((ARCHIVEDOWNCOUNT++))
     fi
-    HOURS=$(($TIMEBEFORENEXTMIN / $SECONDS_PER_HOUR))
-    MINS=$(($TIMEBEFORENEXTMIN % $SECONDS_PER_HOUR))
-    echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Archive Down Count:" $ARCHIVEDOWNCOUNT, "Node Stuck Below Tip:" $TOTALSTUCK, "Time Until Block: $HOURS h $MINS s"
+    HOURS="$(($TIMEBEFORENEXTMIN / $SECONDS_PER_HOUR))"
+    MINS="$(($TIMEBEFORENEXTMIN % $SECONDS_PER_HOUR))"
+    echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Archive Down Count:" $ARCHIVEDOWNCOUNT, "Node Stuck Below Tip:" $TOTALSTUCK, "Time Until Block: $HOURS h $MINS m"
     sleep 300s
     test $? -gt 128 && break;
   done
