@@ -77,7 +77,7 @@ else
     --compressed)
 
     STAT="$(echo $MINA_STATUS | jq .data.daemonStatus.syncStatus)"
-    NEXTPROP="$(echo $MINA_STATUS | jq .data.daemonStatus.nextBlockProduction.times[0].startTime)"
+    NEXTPROP="$(echo $MINA_STATUS | jq .data.daemonStatus.nextBlockProduction.times[0].startTime | tonumber)"
     HIGHESTBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestBlockLengthReceived)"
     HIGHESTUNVALIDATEDBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestUnvalidatedBlockLengthReceived)"
     ARCHIVERUNNING=`ps -A | grep coda-archive | wc -l`
@@ -86,10 +86,8 @@ else
     # Calculate whether block producer will run within the next 5 mins
     # If up for a block within 10 mins, stop snarking, resume on next pass
     if [[ NEXTPROP != null ]]; then
-      echo $NEXTPROP
       NEXTPROP="${NEXTPROP::-3}"
       NOW="$(date +%s)"
-      echo $NOW
       TIMEBEFORENEXT=$(($NEXTPROP - $NOW))
       TIMEBEFORENEXTMIN=$(($TIMEBEFORENEXTSEC / $SECONDS_PER_MINUTE))
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
