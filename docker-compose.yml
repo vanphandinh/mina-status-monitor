@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  mina-status-monitor:
+    container_name: mina-status-monitor
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mina-status-monitor
+    restart: always
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    command: './mina-status-monitor.sh -g ${GRAPHQL_ENDPOINT:-http://mina:3085/graphql} -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
+    networks:
+      - mina-network
+
+networks:
+  mina-network:
+    name: mina-network
+    driver: bridge
