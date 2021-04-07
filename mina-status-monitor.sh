@@ -115,7 +115,7 @@ else
 
       HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
       MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
-      echo "Remaining: $HOURS hours MINS minutes leff"
+      echo "Remaining: $HOURS hours $MINS minutes leff"
 
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
         echo "Stop the snark worker"
@@ -130,6 +130,11 @@ else
       fi
     else
       echo "You haven't won any slot in the current epoch, wait for the next epoch."
+      if [[ "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
+        docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
+        docker exec -t mina mina client set-snark-work-fee $FEE
+        SNARKWORKERTURNEDOFF=0
+      fi
     fi
 
     # Calculate difference between validated and unvalidated blocks
