@@ -77,7 +77,7 @@ else
     --compressed)
 
     STAT="$(echo $MINA_STATUS | jq .data.daemonStatus.syncStatus)"
-    NEXTPROP="$(echo $MINA_STATUS | jq .data.daemonStatus.nextBlockProduction.times[0].startTime | tonumber)"
+    NEXTPROP="$(echo $MINA_STATUS | jq '.data.daemonStatus.nextBlockProduction.times[0].startTime | tonumber')"
     HIGHESTBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestBlockLengthReceived)"
     HIGHESTUNVALIDATEDBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestUnvalidatedBlockLengthReceived)"
     ARCHIVERUNNING=`ps -A | grep coda-archive | wc -l`
@@ -88,8 +88,8 @@ else
     if [[ NEXTPROP != null ]]; then
       NEXTPROP="${NEXTPROP::-3}"
       NOW="$(date +%s)"
-      TIMEBEFORENEXT=$(($NEXTPROP - $NOW))
-      TIMEBEFORENEXTMIN=$(($TIMEBEFORENEXTSEC / $SECONDS_PER_MINUTE))
+      TIMEBEFORENEXT=$(($NEXTPROP-$NOW))
+      TIMEBEFORENEXTMIN=$(($TIMEBEFORENEXTSEC/$SECONDS_PER_MINUTE))
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
         echo "Stop the snark worker"
         docker exec -it mina mina client set-snark-worker
