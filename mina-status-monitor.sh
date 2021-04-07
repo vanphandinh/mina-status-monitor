@@ -12,7 +12,7 @@ TIMEZONE=Asia/Ho_Chi_Minh
 SNARKWORKERTURNEDOFF=1 ### assume snark worker not turned on for the first run
 SNARKWORKERSTOPPEDCOUNT=0
 readonly SECONDS_PER_MINUTE=60
-readonly SECONDS_PER_HOUR=3600
+readonly MINUTES_PER_HOUR=60
 readonly FEE=1000000 ### SET YOUR SNARK WORKER FEE HERE ###
 readonly SW_ADDRESS=B62qkiJuTwdJBARAPGAvStuEa37kZVZPyDrQoUCuM7WQUmZZydNBmTf ### SET YOUR SNARK WORKER ADDRESS HERE ###
 GRAPHQL_URI="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mina)"
@@ -145,8 +145,8 @@ else
     else
       ((ARCHIVEDOWNCOUNT++))
     fi
-    HOURS="$(($TIMEBEFORENEXTMIN / $SECONDS_PER_HOUR))"
-    MINS="$(($TIMEBEFORENEXTMIN % $SECONDS_PER_HOUR))"
+    HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
+    MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
     echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Archive Down Count:" $ARCHIVEDOWNCOUNT, "Node Stuck Below Tip:" $TOTALSTUCK, "Time Until Block: $HOURS h $MINS m"
     sleep 300s
     test $? -gt 128 && break;
