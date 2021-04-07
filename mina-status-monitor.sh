@@ -88,8 +88,8 @@ else
     if [[ NEXTPROP != null ]]; then
       NEXTPROP="${NEXTPROP::-3}"
       NOW="$(date +%s)"
-      TIMEBEFORENEXT="$(($NEXTPROP-$NOW))"
-      TIMEBEFORENEXTMIN="$((${TIMEBEFORENEXTSEC} / ${SECONDS_PER_MINUTE}))"
+      TIMEBEFORENEXT=$(($NEXTPROP - $NOW))
+      TIMEBEFORENEXTMIN=$(($TIMEBEFORENEXTSEC / $SECONDS_PER_MINUTE))
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
         echo "Stop the snark worker"
         docker exec -it mina mina client set-snark-worker
