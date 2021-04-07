@@ -86,8 +86,10 @@ else
     # Calculate whether block producer will run within the next 5 mins
     # If up for a block within 10 mins, stop snarking, resume on next pass
     if [[ NEXTPROP != null ]]; then
+      echo $NEXTPROP
       NEXTPROP="${NEXTPROP::-3}"
       NOW="$(date +%s)"
+      echo $NOW
       TIMEBEFORENEXT=$(($NEXTPROP - $NOW))
       TIMEBEFORENEXTMIN=$(($TIMEBEFORENEXTSEC / $SECONDS_PER_MINUTE))
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
