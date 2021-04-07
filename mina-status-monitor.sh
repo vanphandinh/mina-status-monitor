@@ -13,8 +13,8 @@ SNARKWORKERTURNEDOFF=1 ### assume snark worker not turned on for the first run
 SNARKWORKERSTOPPEDCOUNT=0
 readonly SECONDS_PER_MINUTE=60
 readonly MINUTES_PER_HOUR=60
-readonly FEE=0.001 ### SET YOUR SNARK WORKER FEE HERE ###
-readonly SW_ADDRESS=B62qkiJuTwdJBARAPGAvStuEa37kZVZPyDrQoUCuM7WQUmZZydNBmTf ### SET YOUR SNARK WORKER ADDRESS HERE ###
+FEE= ### SET YOUR SNARK WORKER FEE HERE ###
+SW_ADDRESS= ### SET YOUR SNARK WORKER ADDRESS HERE ###
 GRAPHQL_URI="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mina)"
 if [[ "$GRAPHQL_URI" != "" ]]; then
   GRAPHQL_URI="http://$GRAPHQL_URI:3085/graphql"
@@ -31,6 +31,8 @@ while test $# -gt 0; do
       echo "options:"
       echo "-h, --help                     show brief help"
       echo "-g, --graphql-uri=GRAPHQL-URI  specify the GraphQL endpoint uri of the mina daemon"
+      echo "-a, --snark-address=ADDRESS    specify the snark worker address"
+      echo "-f, --snark-fee=FEE            specify the snark worker fee"
       echo "-t, --timezone=TIMEZONE        specify the time zone for the log time"
       exit 0
       ;;
@@ -52,6 +54,24 @@ while test $# -gt 0; do
         TIMEZONE=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
+    -f)
+      shift
+        FEE=$1
+      shift
+      ;;
+    --snark-fee*)
+        FEE=`echo $1 | sed -e 's/^[^=]*=//g'`
+      shift
+      ;;
+    -a)
+      shift
+        SW_ADDRESS=$1
+      shift
+      ;;
+    --snark-address*)
+        SW_ADDRESS=`echo $1 | sed -e 's/^[^=]*=//g'`
+      shift
+      ;;
     *)
       break
       ;;
@@ -66,6 +86,8 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
     echo "options:"
     echo "-h, --help                     show brief help"
     echo "-g, --graphql-uri=GRAPHQL-URI  specify the GraphQL endpoint uri of the mina daemon"
+    echo "-a, --snark-address=ADDRESS    specify the snark worker address"
+    echo "-f, --snark-fee=FEE            specify the snark worker fee"
     echo "-t, --timezone=TIMEZONE        specify the time zone for the log time"
     exit 0
 else
@@ -90,7 +112,10 @@ else
       NOW="$(date +%s)"
       TIMEBEFORENEXT="$(($NEXTPROP - $NOW))"
       TIMEBEFORENEXTMIN="$(($TIMEBEFORENEXT / $SECONDS_PER_MINUTE))"
-      echo "Remaining: $TIMEBEFORENEXTMIN minutes leff"
+
+      HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
+      MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
+      echo "Remaining: $HOURS hours MINS minutes leff"
 
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
         echo "Stop the snark worker"
@@ -103,6 +128,8 @@ else
           SNARKWORKERTURNEDOFF=0
         fi
       fi
+    else
+      echo "You haven't won any slot in the current epoch, wait for the next epoch."
     fi
 
     # Calculate difference between validated and unvalidated blocks
@@ -145,9 +172,7 @@ else
     else
       ((ARCHIVEDOWNCOUNT++))
     fi
-    HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
-    MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
-    echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Archive Down Count:" $ARCHIVEDOWNCOUNT, "Node Stuck Below Tip:" $TOTALSTUCK, "Time Until Block: $HOURS h $MINS m"
+    echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Archive Down Count:" $ARCHIVEDOWNCOUNT, "Node Stuck Below Tip:" $TOTALSTUCK
     sleep 300s
     test $? -gt 128 && break;
   done
