@@ -11,6 +11,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     command: './mina-status-monitor.sh -g ${GRAPHQL_ENDPOINT:-http://mina:3085/graphql} -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
+    pid: "host"
     networks:
       - mina-network
 
