@@ -13,7 +13,8 @@ SNARKWORKERTURNEDOFF=1 ### assume snark worker not turned on for the first run
 SNARKWORKERSTOPPEDCOUNT=0
 readonly SECONDS_PER_MINUTE=60
 readonly MINUTES_PER_HOUR=60
-FEE= ### SET YOUR SNARK WORKER FEE HERE ###
+readonly HOURS_PER_DAY=24
+FEE=0.001 ### SET YOUR SNARK WORKER FEE HERE ###
 SW_ADDRESS= ### SET YOUR SNARK WORKER ADDRESS HERE ###
 GRAPHQL_URI="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mina)"
 if [[ "$GRAPHQL_URI" != "" ]]; then
@@ -114,11 +115,12 @@ else
       TIMEBEFORENEXT="$(($NEXTPROP - $NOW))"
       TIMEBEFORENEXTMIN="$(($TIMEBEFORENEXT / $SECONDS_PER_MINUTE))"
 
-      HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
       MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
-      echo "Remaining: $HOURS hours $MINS minutes leff"
+      HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
+      DAYS="$(($HOURS / $HOURS_PER_DAY))"
+      echo "Remaining: $DAYS days $HOURS hours $MINS minutes left"
 
-      if [[ "$TIMEBEFORENEXTMIN" -lt 10 ]]; then
+      if [[ "$TIMEBEFORENEXTMIN" -lt 10 && "$SNARKWORKERTURNEDOFF" -eq 0 ]]; then
         echo "Stop the snark worker"
         docker exec -t mina mina client set-snark-worker
         ((SNARKWORKERTURNEDOFF++))
