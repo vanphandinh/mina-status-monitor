@@ -118,6 +118,7 @@ else
       MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
       HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
       DAYS="$(($HOURS / $HOURS_PER_DAY))"
+      HOURS="$(($HOURS % $HOURS_PER_DAY))"
       echo "Remaining: $DAYS days $HOURS hours $MINS minutes left"
 
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 && "$SNARKWORKERTURNEDOFF" -eq 0 ]]; then
