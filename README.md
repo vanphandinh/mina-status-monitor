@@ -17,15 +17,11 @@ docker-compose up -d
 ```
 
 # Update the latest version
-1. Remove the old one
-```
-docker rm -f mina-status-monitor
-```
-2. Cd to the repo and pull the update
+1. Cd to the repo and pull the update
 ```
 cd mina-status-monitor && git pull
 ```
-3. Update the latest version
+2. Update the latest version
 ```
 docker-compose up -d --build && docker system prune -af
 ```
