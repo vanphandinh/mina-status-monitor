@@ -94,10 +94,16 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
 else
   echo "GraphQL endpoint: $GRAPHQL_URI"
   while :; do
-    MINA_STATUS=$(curl $GRAPHQL_URI -s \
+    MINA_STATUS=$(curl $GRAPHQL_URI -s --max-time 30 \
     -H 'content-type: application/json' \
     --data-raw '{"operationName":null,"variables":{},"query":"{\n  daemonStatus {\n    syncStatus\n    highestBlockLengthReceived\n    highestUnvalidatedBlockLengthReceived\n    nextBlockProduction {\n      times {\n        startTime\n      }\n    }\n  }\n}\n"}' \
     --compressed)
+
+    if [[ "$MINA_STATUS" == "" ]]; then
+      echo "Cannot connect to the GraphQL endpoint $GRAPHQL_URI."
+      sleep 10s
+      continue
+    fi
 
     STAT="$(echo $MINA_STATUS | jq .data.daemonStatus.syncStatus)"
     NEXTPROP="$(echo $MINA_STATUS | jq .data.daemonStatus.nextBlockProduction.times[0].startTime)"
