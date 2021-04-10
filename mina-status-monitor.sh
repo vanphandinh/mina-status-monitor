@@ -99,6 +99,9 @@ else
     --data-raw '{"operationName":null,"variables":{},"query":"{\n  daemonStatus {\n    syncStatus\n    highestBlockLengthReceived\n    highestUnvalidatedBlockLengthReceived\n    nextBlockProduction {\n      times {\n        startTime\n      }\n    }\n  }\n}\n"}' \
     --compressed)
 
+    LOGTIME=$(TZ=$TIMEZONE date +'(%Y-%m-%d %H:%M:%S)')
+    echo $LOGTIME
+
     if [[ "$MINA_STATUS" == "" ]]; then
       echo "Cannot connect to the GraphQL endpoint $GRAPHQL_URI."
       sleep 10s
@@ -110,7 +113,6 @@ else
     HIGHESTBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestBlockLengthReceived)"
     HIGHESTUNVALIDATEDBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestUnvalidatedBlockLengthReceived)"
     ARCHIVERUNNING=`ps -A | grep coda-archive | wc -l`
-    LOGTIME=$(TZ=$TIMEZONE date +'(%Y-%m-%d %H:%M:%S)')
 
     # Calculate whether block producer will run within the next 5 mins
     # If up for a block within 10 mins, stop snarking, resume on next pass
@@ -125,7 +127,7 @@ else
       HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
       DAYS="$(($HOURS / $HOURS_PER_DAY))"
       HOURS="$(($HOURS % $HOURS_PER_DAY))"
-      echo "Remaining: $DAYS days $HOURS hours $MINS minutes left"
+      echo "Next block production: $DAYS days $HOURS hours $MINS minutes left"
 
       if [[ "$TIMEBEFORENEXTMIN" -lt 10 && "$SNARKWORKERTURNEDOFF" -eq 0 ]]; then
         echo "Stopping the snark worker.."
@@ -148,7 +150,7 @@ else
     # Calculate difference between validated and unvalidated blocks
     # If block height is more than 10 block behind, somthing is likely wrong
     DELTAVALIDATED="$(($HIGHESTUNVALIDATEDBLOCK-$HIGHESTBLOCK))"
-    echo "$LOGTIME - DELTA VALIDATE: $DELTAVALIDATED"
+    echo "DELTA VALIDATE: $DELTAVALIDATED"
     if [[ "$DELTAVALIDATED" -gt 10 ]]; then
       echo "Node stuck validated block height delta more than 10 blocks"
       ((TOTALSTUCK++))
