@@ -10,6 +10,7 @@ TOTALSTUCK=0
 ARCHIVEDOWNCOUNT=0
 TIMEZONE=Asia/Ho_Chi_Minh
 SNARKWORKERTURNEDOFF=1 ### assume snark worker not turned on for the first run
+DISABLESNARKWORKER=FALSE ### disable/enable snark worker
 SNARKWORKERSTOPPEDCOUNT=0
 readonly SECONDS_PER_MINUTE=60
 readonly MINUTES_PER_HOUR=60
@@ -30,11 +31,12 @@ while test $# -gt 0; do
       echo "./$package [options] [arguments]"
       echo " "
       echo "options:"
-      echo "-h, --help                     show brief help"
-      echo "-g, --graphql-uri=GRAPHQL-URI  specify the GraphQL endpoint uri of the mina daemon"
-      echo "-a, --snark-address=ADDRESS    specify the snark worker address"
-      echo "-f, --snark-fee=FEE            specify the snark worker fee"
-      echo "-t, --timezone=TIMEZONE        specify the time zone for the log time"
+      echo "-h, --help                              show brief help"
+      echo "-g, --graphql-uri=GRAPHQL-URI           specify the GraphQL endpoint uri of the mina daemon"
+      echo "-t, --timezone=TIMEZONE                 specify the time zone for the log time"
+      echo "-a, --snark-address=ADDRESS             specify the snark worker address"
+      echo "-f, --snark-fee=FEE                     specify the snark worker fee"
+      echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable the snark worker, default: FALSE"
       exit 0
       ;;
     -g)
@@ -53,6 +55,15 @@ while test $# -gt 0; do
       ;;
     --timezone*)
         TIMEZONE=`echo $1 | sed -e 's/^[^=]*=//g'`
+      shift
+      ;;
+    -d)
+      shift
+        DISABLESNARKWORKER=$1
+      shift
+      ;;
+    --disable-snark-worker*)
+        DISABLESNARKWORKER=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
     -f)
@@ -85,11 +96,12 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
     echo "./$package [options] [arguments]"
     echo " "
     echo "options:"
-    echo "-h, --help                     show brief help"
-    echo "-g, --graphql-uri=GRAPHQL-URI  specify the GraphQL endpoint uri of the mina daemon"
-    echo "-a, --snark-address=ADDRESS    specify the snark worker address"
-    echo "-f, --snark-fee=FEE            specify the snark worker fee"
-    echo "-t, --timezone=TIMEZONE        specify the time zone for the log time"
+    echo "-h, --help                              show brief help"
+    echo "-g, --graphql-uri=GRAPHQL-URI           specify the GraphQL endpoint uri of the mina daemon"
+    echo "-t, --timezone=TIMEZONE                 specify the time zone for the log time"
+    echo "-a, --snark-address=ADDRESS             specify the snark worker address"
+    echo "-f, --snark-fee=FEE                     specify the snark worker fee"
+    echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable the snark worker, default: FALSE"
     exit 0
 else
   echo "GraphQL endpoint: $GRAPHQL_URI"
@@ -116,34 +128,36 @@ else
 
     # Calculate whether block producer will run within the next 5 mins
     # If up for a block within 10 mins, stop snarking, resume on next pass
-    if [[ $NEXTPROP != null ]]; then
-      NEXTPROP=$(echo $NEXTPROP | jq tonumber)
-      NEXTPROP="${NEXTPROP::-3}"
-      NOW="$(date +%s)"
-      TIMEBEFORENEXT="$(($NEXTPROP - $NOW))"
-      TIMEBEFORENEXTMIN="$(($TIMEBEFORENEXT / $SECONDS_PER_MINUTE))"
+    if [[ "$DISABLESNARKWORKER" == "FALSE" ]]; then
+      if [[ $NEXTPROP != null ]]; then
+        NEXTPROP=$(echo $NEXTPROP | jq tonumber)
+        NEXTPROP="${NEXTPROP::-3}"
+        NOW="$(date +%s)"
+        TIMEBEFORENEXT="$(($NEXTPROP - $NOW))"
+        TIMEBEFORENEXTMIN="$(($TIMEBEFORENEXT / $SECONDS_PER_MINUTE))"
 
-      MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
-      HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
-      DAYS="$(($HOURS / $HOURS_PER_DAY))"
-      HOURS="$(($HOURS % $HOURS_PER_DAY))"
-      echo "Next block production: $DAYS days $HOURS hours $MINS minutes left"
+        MINS="$(($TIMEBEFORENEXTMIN % $MINUTES_PER_HOUR))"
+        HOURS="$(($TIMEBEFORENEXTMIN / $MINUTES_PER_HOUR))"
+        DAYS="$(($HOURS / $HOURS_PER_DAY))"
+        HOURS="$(($HOURS % $HOURS_PER_DAY))"
+        echo "Next block production: $DAYS days $HOURS hours $MINS minutes left"
 
-      if [[ "$TIMEBEFORENEXTMIN" -lt 10 && "$SNARKWORKERTURNEDOFF" -eq 0 ]]; then
-        echo "Stopping the snark worker.."
-        docker exec -t mina mina client set-snark-worker
-        ((SNARKWORKERTURNEDOFF++))
-      elif [[ "$TIMEBEFORENEXTMIN" -ge 10 && "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
+        if [[ "$TIMEBEFORENEXTMIN" -lt 10 && "$SNARKWORKERTURNEDOFF" -eq 0 ]]; then
+          echo "Stopping the snark worker.."
+          docker exec -t mina mina client set-snark-worker
+          ((SNARKWORKERTURNEDOFF++))
+        elif [[ "$TIMEBEFORENEXTMIN" -ge 10 && "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
+            docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
+            docker exec -t mina mina client set-snark-work-fee $FEE
+            SNARKWORKERTURNEDOFF=0
+        fi
+      else
+        echo "You haven't won any slot in the current epoch, wait for the next epoch."
+        if [[ "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
           docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
           docker exec -t mina mina client set-snark-work-fee $FEE
           SNARKWORKERTURNEDOFF=0
-      fi
-    else
-      echo "You haven't won any slot in the current epoch, wait for the next epoch."
-      if [[ "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
-        docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
-        docker exec -t mina mina client set-snark-work-fee $FEE
-        SNARKWORKERTURNEDOFF=0
+        fi
       fi
     fi
 

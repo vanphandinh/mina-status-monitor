@@ -10,7 +10,7 @@ services:
     restart: always
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-    command: '/scripts/mina-status-monitor.sh -a ${SNARK_ADDRESS:-B62qkiJuTwdJBARAPGAvStuEa37kZVZPyDrQoUCuM7WQUmZZydNBmTf} -f ${SNARK_FEE:-0.001} -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
+    command: '/scripts/mina-status-monitor.sh -d ${DISABLE_SNARK_WORKER:-FALSE} -a ${SNARK_ADDRESS:-B62qkiJuTwdJBARAPGAvStuEa37kZVZPyDrQoUCuM7WQUmZZydNBmTf} -f ${SNARK_FEE:-0.001} -t ${TIMEZONE:-Asia/Ho_Chi_Minh}'
     pid: "host"
     networks:
       - mina-network
