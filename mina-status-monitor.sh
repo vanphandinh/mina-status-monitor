@@ -17,10 +17,8 @@ readonly MINUTES_PER_HOUR=60
 readonly HOURS_PER_DAY=24
 FEE=0.001 ### SET YOUR SNARK WORKER FEE HERE ###
 SW_ADDRESS= ### SET YOUR SNARK WORKER ADDRESS HERE ###
-GRAPHQL_URI="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mina)"
-if [[ "$GRAPHQL_URI" != "" ]]; then
-  GRAPHQL_URI="http://$GRAPHQL_URI:3085/graphql"
-fi
+CONTAINER_NAME="mina"
+GRAPHQL_URI=""
 
 package=`basename "$0"`
 while test $# -gt 0; do
@@ -32,20 +30,20 @@ while test $# -gt 0; do
       echo " "
       echo "options:"
       echo "-h, --help                              show brief help"
-      echo "-g, --graphql-uri=GRAPHQL-URI           specify the GraphQL endpoint uri of the mina daemon"
-      echo "-t, --timezone=TIMEZONE                 specify the time zone for the log time"
-      echo "-a, --snark-address=ADDRESS             specify the snark worker address"
-      echo "-f, --snark-fee=FEE                     specify the snark worker fee"
-      echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable the snark worker, default: FALSE"
+      echo "-n, --container-name=CONTAINER-NAME     specify name of the Mina daemon container, default: mina"
+      echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
+      echo "-a, --snark-address=ADDRESS             specify snark worker address"
+      echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
+      echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable snark worker, default: FALSE"
       exit 0
       ;;
-    -g)
+    -n)
       shift
-        GRAPHQL_URI=$1
+        CONTAINER_NAME=$1
       shift
       ;;
-    --graphql-uri*)
-        GRAPHQL_URI=`echo $1 | sed -e 's/^[^=]*=//g'`
+    --container-name*)
+        CONTAINER_NAME=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
     -t)
@@ -90,6 +88,11 @@ while test $# -gt 0; do
   esac
 done
 
+GRAPHQL_URI="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_NAME)"
+if [[ "$GRAPHQL_URI" != "" ]]; then
+  GRAPHQL_URI="http://$GRAPHQL_URI:3085/graphql"
+fi
+
 if [[ "$GRAPHQL_URI" == "" ]]; then
     echo "./$package - attempt to monitor the mina daemon"
     echo " "
@@ -97,16 +100,16 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
     echo " "
     echo "options:"
     echo "-h, --help                              show brief help"
-    echo "-g, --graphql-uri=GRAPHQL-URI           specify the GraphQL endpoint uri of the mina daemon"
-    echo "-t, --timezone=TIMEZONE                 specify the time zone for the log time"
-    echo "-a, --snark-address=ADDRESS             specify the snark worker address"
-    echo "-f, --snark-fee=FEE                     specify the snark worker fee"
-    echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable the snark worker, default: FALSE"
+    echo "-n, --container-name=CONTAINER-NAME     specify name of the Mina daemon container, default: mina"
+    echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
+    echo "-a, --snark-address=ADDRESS             specify snark worker address"
+    echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
+    echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable snark worker, default: FALSE"
     exit 0
 else
   echo "GraphQL endpoint: $GRAPHQL_URI"
   while :; do
-    MINA_STATUS=$(curl $GRAPHQL_URI -s --max-time 30 \
+    MINA_STATUS=$(curl $GRAPHQL_URI -s --max-time 60 \
     -H 'content-type: application/json' \
     --data-raw '{"operationName":null,"variables":{},"query":"{\n  daemonStatus {\n    syncStatus\n    highestBlockLengthReceived\n    highestUnvalidatedBlockLengthReceived\n    nextBlockProduction {\n      times {\n        startTime\n      }\n    }\n  }\n}\n"}' \
     --compressed)
