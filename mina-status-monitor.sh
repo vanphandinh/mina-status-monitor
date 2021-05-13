@@ -15,6 +15,7 @@ SNARKWORKERSTOPPEDCOUNT=0
 readonly SECONDS_PER_MINUTE=60
 readonly MINUTES_PER_HOUR=60
 readonly HOURS_PER_DAY=24
+readonly SECONDS_PER_HOUR=3600
 FEE=0.001 ### SET YOUR SNARK WORKER FEE HERE ###
 SW_ADDRESS= ### SET YOUR SNARK WORKER ADDRESS HERE ###
 CONTAINER_NAME="mina"
@@ -111,7 +112,7 @@ else
   while :; do
     MINA_STATUS=$(curl $GRAPHQL_URI -s --max-time 60 \
     -H 'content-type: application/json' \
-    --data-raw '{"operationName":null,"variables":{},"query":"{\n  daemonStatus {\n    syncStatus\n    highestBlockLengthReceived\n    highestUnvalidatedBlockLengthReceived\n    nextBlockProduction {\n      times {\n        startTime\n      }\n    }\n  }\n}\n"}' \
+    --data-raw '{"operationName":null,"variables":{},"query":"{\n  daemonStatus {\n    syncStatus\n    uptimeSecs\n    blockchainLength\n    highestBlockLengthReceived\n    highestUnvalidatedBlockLengthReceived\n    nextBlockProduction {\n      times {\n        startTime\n      }\n    }\n  }\n}\n"}' \
     --compressed)
 
     LOGTIME=$(TZ=$TIMEZONE date +'(%Y-%m-%d %H:%M:%S)')
@@ -125,6 +126,8 @@ else
 
     STAT="$(echo $MINA_STATUS | jq .data.daemonStatus.syncStatus)"
     NEXTPROP="$(echo $MINA_STATUS | jq .data.daemonStatus.nextBlockProduction.times[0].startTime)"
+    UPTIMESECS="$(echo $MINA_STATUS | jq .data.daemonStatus.uptimeSecs)"
+    BCLENGTH="$(echo $MINA_STATUS | jq .data.daemonStatus.blockchainLength)"
     HIGHESTBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestBlockLengthReceived)"
     HIGHESTUNVALIDATEDBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestUnvalidatedBlockLengthReceived)"
     ARCHIVERUNNING=`ps -A | grep coda-archive | wc -l`
@@ -170,6 +173,14 @@ else
     echo "DELTA VALIDATE: $DELTAVALIDATED"
     if [[ "$DELTAVALIDATED" -gt 10 ]]; then
       echo "Node stuck validated block height delta more than 10 blocks"
+      ((TOTALSTUCK++))
+      docker restart mina
+    fi
+
+    # If the node is catchup for the second time, the the blockchain length is more than 10 blocks behind
+    # 2 hours is enough for the node to sync
+    if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 10 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
+      echo "Node stuck, it is catchup for the second time"
       ((TOTALSTUCK++))
       docker restart mina
     fi
