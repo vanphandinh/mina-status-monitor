@@ -179,7 +179,7 @@ else
 
     # If the node is catchup for the second time, the the blockchain length is more than 10 blocks behind
     # 2 hours is enough for the node to sync
-    if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 10 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
+    if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 10 && "$DELTAVALIDATED" -eq 0 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
       echo "Node stuck, it is catchup for the second time"
       ((TOTALSTUCK++))
       docker restart mina
