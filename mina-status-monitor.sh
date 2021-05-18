@@ -171,15 +171,15 @@ else
     # If block height is more than 10 block behind, somthing is likely wrong
     DELTAVALIDATED="$(($HIGHESTUNVALIDATEDBLOCK-$HIGHESTBLOCK))"
     echo "DELTA VALIDATE: $DELTAVALIDATED"
-    if [[ "$DELTAVALIDATED" -gt 10 ]]; then
-      echo "Node stuck validated block height delta more than 10 blocks"
+    if [[ "$DELTAVALIDATED" -gt 5 ]]; then
+      echo "Node stuck validated block height delta more than 5 blocks"
       ((TOTALSTUCK++))
       docker restart mina
     fi
 
-    # If the node is catchup for the second time, the the blockchain length is more than 10 blocks behind
+    # If the node is catchup for the second time, the the blockchain length is more than 5 blocks behind
     # 2 hours is enough for the node to sync
-    if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 10 && "$DELTAVALIDATED" -eq 0 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
+    if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 5 && "$DELTAVALIDATED" -eq 0 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
       echo "Node stuck, it is catchup for the second time"
       ((TOTALSTUCK++))
       docker restart mina
