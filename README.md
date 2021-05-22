@@ -4,6 +4,7 @@ Tool for monitoring your mina daemon when your node stuck in the old blocks, mon
 
 # Environments
 
+- `DISABLE_SIDEBAR` - disable/enable the mina sidebar, default: FALSE
 - `DISABLE_SNARK_WORKER` - disable/enable the snark worker, default: FALSE
 - `SNARK_ADDRESS` - snark worker address, default: B62qkiJuTwdJBARAPGAvStuEa37kZVZPyDrQoUCuM7WQUmZZydNBmTf
 - `SNARK_FEE` - snark worker fee (mina), default: 0.001
