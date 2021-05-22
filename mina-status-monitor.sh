@@ -26,6 +26,7 @@ BCLENGTH=0
 HIGHESTBLOCK=0
 HIGHESTUNVALIDATEDBLOCK=0
 SIDECARREPORTING=0
+SYNCCOUNT=0
 DISABLESIDEBAR=FALSE ### disable/enable mina-sidebar monitor
 
 package=`basename "$0"`
@@ -116,6 +117,8 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
     exit 0
 else
   echo "GraphQL endpoint: $GRAPHQL_URI"
+  echo "Disable snark worker stopper: $DISABLESNARKWORKER"
+  echo "Disable sidebar monitor: $DISABLESIDEBAR"
   while :; do
     MINA_STATUS=$(curl $GRAPHQL_URI -s --max-time 60 \
     -H 'content-type: application/json' \
@@ -246,7 +249,7 @@ else
       docker restart mina-sidecar
     fi
 
-    echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Catchup Count, Total:" $CATCHUPCOUNT $TOTALCATCHUPCOUNT, "Total Height Mismatch:" $TOTALHEIGHTOFFCOUNT, "Node Stuck Below Tip:" $TOTALSTUCKCOUNT
+    echo "Status:" $STAT, "Current Synced Count:" $SYNCCOUNT,  "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Catchup Count, Total:" $CATCHUPCOUNT $TOTALCATCHUPCOUNT, "Total Height Mismatch:" $TOTALHEIGHTOFFCOUNT, "Node Stuck Below Tip:" $TOTALSTUCKCOUNT
     sleep 300s
     test $? -gt 128 && break;
   done
