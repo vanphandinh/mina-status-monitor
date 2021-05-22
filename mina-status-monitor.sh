@@ -1,13 +1,14 @@
 #!/bin/bash
 MINA_STATUS=""
 STAT=""
-ARCHIVESTAT=0
 CONNECTINGCOUNT=0
 OFFLINECOUNT=0
+CATCHUPCOUNT=0
 TOTALCONNECTINGCOUNT=0
 TOTALOFFLINECOUNT=0
-TOTALSTUCK=0
-ARCHIVEDOWNCOUNT=0
+TOTALSTUCKCOUNT=0
+TOTALCATCHUPCOUNT=0
+TOTALHEIGHTOFFCOUNT=0
 TIMEZONE=Asia/Ho_Chi_Minh
 SNARKWORKERTURNEDOFF=1 ### assume snark worker not turned on for the first run
 DISABLESNARKWORKER=FALSE ### disable/enable snark worker
@@ -18,8 +19,13 @@ readonly HOURS_PER_DAY=24
 readonly SECONDS_PER_HOUR=3600
 FEE=0.001 ### SET YOUR SNARK WORKER FEE HERE ###
 SW_ADDRESS= ### SET YOUR SNARK WORKER ADDRESS HERE ###
-CONTAINER_NAME="mina"
 GRAPHQL_URI=""
+NEXTPROP=null
+UPTIMESECS=0
+BCLENGTH=0
+HIGHESTBLOCK=0
+HIGHESTUNVALIDATEDBLOCK=0
+SIDECARREPORTING=0
 
 package=`basename "$0"`
 while test $# -gt 0; do
@@ -31,21 +37,11 @@ while test $# -gt 0; do
       echo " "
       echo "options:"
       echo "-h, --help                              show brief help"
-      echo "-n, --container-name=CONTAINER-NAME     specify name of the Mina daemon container, default: mina"
       echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
       echo "-a, --snark-address=ADDRESS             specify snark worker address"
       echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
       echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable snark worker, default: FALSE"
       exit 0
-      ;;
-    -n)
-      shift
-        CONTAINER_NAME=$1
-      shift
-      ;;
-    --container-name*)
-        CONTAINER_NAME=`echo $1 | sed -e 's/^[^=]*=//g'`
-      shift
       ;;
     -t)
       shift
@@ -89,7 +85,7 @@ while test $# -gt 0; do
   esac
 done
 
-GRAPHQL_URI="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $CONTAINER_NAME)"
+GRAPHQL_URI="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mina)"
 if [[ "$GRAPHQL_URI" != "" ]]; then
   GRAPHQL_URI="http://$GRAPHQL_URI:3085/graphql"
 fi
@@ -101,7 +97,6 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
     echo " "
     echo "options:"
     echo "-h, --help                              show brief help"
-    echo "-n, --container-name=CONTAINER-NAME     specify name of the Mina daemon container, default: mina"
     echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
     echo "-a, --snark-address=ADDRESS             specify snark worker address"
     echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
@@ -130,7 +125,7 @@ else
     BCLENGTH="$(echo $MINA_STATUS | jq .data.daemonStatus.blockchainLength)"
     HIGHESTBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestBlockLengthReceived)"
     HIGHESTUNVALIDATEDBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestUnvalidatedBlockLengthReceived)"
-    ARCHIVERUNNING=`ps -A | grep coda-archive | wc -l`
+    SIDECARREPORTING="$(docker logs --since 10m mina-sidecar 2>&1 | grep -c 'Got block data')"
 
     # Calculate whether block producer will run within the next 5 mins
     # If up for a block within 10 mins, stop snarking, resume on next pass
@@ -172,50 +167,73 @@ else
     DELTAVALIDATED="$(($HIGHESTUNVALIDATEDBLOCK-$HIGHESTBLOCK))"
     echo "DELTA VALIDATE: $DELTAVALIDATED"
     if [[ "$DELTAVALIDATED" -gt 5 ]]; then
-      echo "Node stuck validated block height delta more than 5 blocks"
-      ((TOTALSTUCK++))
+      echo "Node stuck validated block height delta more than 5 blocks. Difference from Max obvserved and max observied unvalidated:", $DELTAVALIDATED
+      ((TOTALSTUCKCOUNT++))
+      SYNCCOUNT=0
       docker restart mina
     fi
 
     # If the node is catchup for the second time, the the blockchain length is more than 5 blocks behind
     # 2 hours is enough for the node to sync
     if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 5 && "$DELTAVALIDATED" -eq 0 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
-      echo "Node stuck, it is catchup for the second time"
-      ((TOTALSTUCK++))
+      echo "Blockchain length is behind Highest block length more than 5 blocks", $BCLENGTH, $HIGHESTBLOCK, $HIGHESTUNVALIDATEDBLOCK
+      ((TOTALHEIGHTOFFCOUNT++))
       docker restart mina
     fi
 
     if [[ "$STAT" == "\"SYNCED\"" ]]; then
       OFFLINECOUNT=0
       CONNECTINGCOUNT=0
+      CATCHUPCOUNT=0
+      ((SYNCCOUNT++))
     fi
 
     if [[ "$STAT" == "\"CONNECTING\"" ]]; then
       ((CONNECTINGCOUNT++))
       ((TOTALCONNECTINGCOUNT++))
+      SYNCCOUNT=0
     fi
 
     if [[ "$STAT" == "\"OFFLINE\"" ]]; then
       ((OFFLINECOUNT++))
       ((TOTALOFFLINECOUNT++))
+      SYNCCOUNT=0
+    fi
+
+    if [[ "$STAT" == "\"CATCHUP\"" ]]; then
+      ((CATCHUPCOUNT++))
+      ((TOTALCATCHUPCOUNT++))
+      SYNCCOUNT=0
     fi
 
     if [[ "$CONNECTINGCOUNT" -gt 1 ]]; then
+      echo "Restarting mina - too long in Connecting state (~10 mins)"
       docker restart mina
       CONNECTINGCOUNT=0
+      SYNCCOUNT=0
     fi
 
     if [[ "$OFFLINECOUNT" -gt 3 ]]; then
+      echo "Restarting mina - too long in Offline state (~20 mins)"
       docker restart mina
       OFFLINECOUNT=0
+      SYNCCOUNT=0
     fi
 
-    if [[ "$ARCHIVERUNNING" -gt 0 ]]; then
-      ARCHIVERRUNNING=0
-    else
-      ((ARCHIVEDOWNCOUNT++))
+    if [[ "$CATCHUPCOUNT" -gt 8 ]]; then
+      echo "Restarting mina - too long in Catchup state (~45 mins)"
+      docker restart mina
+      CATCHUPCOUNT=0
+      SYNCCOUNT=0
     fi
-    echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Archive Down Count:" $ARCHIVEDOWNCOUNT, "Node Stuck Below Tip:" $TOTALSTUCK
+
+    if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 ]]; then
+      echo "Restarting mina-sidecar - only reported " $SIDECARREPORTING " times out in 10 mins and node in sync longer than 15 mins."
+      SYNCCOUNT=0
+      docker restart mina-sidecar
+    fi
+
+    echo "Status:" $STAT, "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Catchup Count, Total:" $CATCHUPCOUNT $TOTALCATCHUPCOUNT, "Total Height Mismatch:" $TOTALHEIGHTOFFCOUNT, "Node Stuck Below Tip:" $TOTALSTUCKCOUNT
     sleep 300s
     test $? -gt 128 && break;
   done
