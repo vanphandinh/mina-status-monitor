@@ -175,7 +175,7 @@ else
     fi
 
     # Calculate difference between validated and unvalidated blocks
-    # If block height is more than 10 block behind, somthing is likely wrong
+    # If block height is more than 5 block behind, somthing is likely wrong
     DELTAVALIDATED="$(($HIGHESTUNVALIDATEDBLOCK-$HIGHESTBLOCK))"
     echo "DELTA VALIDATE: $DELTAVALIDATED"
     if [[ "$DELTAVALIDATED" -gt 5 ]]; then
