@@ -190,6 +190,7 @@ else
     if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 5 && "$DELTAVALIDATED" -eq 0 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
       echo "Blockchain length is behind Highest block length more than 5 blocks", $BCLENGTH, $HIGHESTBLOCK, $HIGHESTUNVALIDATEDBLOCK
       ((TOTALHEIGHTOFFCOUNT++))
+      SYNCCOUNT=0
       docker restart mina
     fi
 
