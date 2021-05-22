@@ -26,6 +26,7 @@ BCLENGTH=0
 HIGHESTBLOCK=0
 HIGHESTUNVALIDATEDBLOCK=0
 SIDECARREPORTING=0
+DISABLESIDEBAR=FALSE ### disable/enable mina-sidebar monitor
 
 package=`basename "$0"`
 while test $# -gt 0; do
@@ -40,7 +41,8 @@ while test $# -gt 0; do
       echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
       echo "-a, --snark-address=ADDRESS             specify snark worker address"
       echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
-      echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable snark worker, default: FALSE"
+      echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker, default: FALSE"
+      echo "-sb, --disable-sidebar=TRUE/FALSE       disable/enable sidebar, default: FALSE"
       exit 0
       ;;
     -t)
@@ -52,13 +54,22 @@ while test $# -gt 0; do
         TIMEZONE=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
-    -d)
+    -sw)
       shift
         DISABLESNARKWORKER=$1
       shift
       ;;
     --disable-snark-worker*)
         DISABLESNARKWORKER=`echo $1 | sed -e 's/^[^=]*=//g'`
+      shift
+      ;;
+    -sb)
+      shift
+        DISABLESIDEBAR=$1
+      shift
+      ;;
+    --disable-sidebar*)
+        DISABLESIDEBAR=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
     -f)
@@ -100,7 +111,8 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
     echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
     echo "-a, --snark-address=ADDRESS             specify snark worker address"
     echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
-    echo "-d, --disable-snark-worker=TRUE/FALSE   disable/enable snark worker, default: FALSE"
+    echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker, default: FALSE"
+    echo "-sb, --disable-sidebar=TRUE/FALSE       disable/enable sidebar, default: FALSE"
     exit 0
 else
   echo "GraphQL endpoint: $GRAPHQL_URI"
@@ -227,7 +239,7 @@ else
       SYNCCOUNT=0
     fi
 
-    if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 ]]; then
+    if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDEBAR" == "FALSE" ]]; then
       echo "Restarting mina-sidecar - only reported " $SIDECARREPORTING " times out in 10 mins and node in sync longer than 15 mins."
       SYNCCOUNT=0
       docker restart mina-sidecar
