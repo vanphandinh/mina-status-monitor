@@ -27,7 +27,7 @@ HIGHESTBLOCK=0
 HIGHESTUNVALIDATEDBLOCK=0
 SIDECARREPORTING=0
 SYNCCOUNT=0
-DISABLESIDEBAR=FALSE ### disable/enable mina-sidebar monitor
+DISABLESIDECAR=FALSE ### disable/enable mina-sidecar monitor
 
 package=`basename "$0"`
 while test $# -gt 0; do
@@ -42,8 +42,8 @@ while test $# -gt 0; do
       echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
       echo "-a, --snark-address=ADDRESS             specify snark worker address"
       echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
-      echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker, default: FALSE"
-      echo "-sb, --disable-sidebar=TRUE/FALSE       disable/enable sidebar, default: FALSE"
+      echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker stopper, default: FALSE"
+      echo "-sc, --disable-sidecar=TRUE/FALSE       disable/enable sidecar monitor, default: FALSE"
       exit 0
       ;;
     -t)
@@ -64,13 +64,13 @@ while test $# -gt 0; do
         DISABLESNARKWORKER=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
-    -sb)
+    -sc)
       shift
-        DISABLESIDEBAR=$1
+        DISABLESIDECAR=$1
       shift
       ;;
-    --disable-sidebar*)
-        DISABLESIDEBAR=`echo $1 | sed -e 's/^[^=]*=//g'`
+    --disable-sidecar*)
+        DISABLESIDECAR=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
     -f)
@@ -112,13 +112,13 @@ if [[ "$GRAPHQL_URI" == "" ]]; then
     echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
     echo "-a, --snark-address=ADDRESS             specify snark worker address"
     echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
-    echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker, default: FALSE"
-    echo "-sb, --disable-sidebar=TRUE/FALSE       disable/enable sidebar, default: FALSE"
+    echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker stopper, default: FALSE"
+    echo "-sc, --disable-sidecar=TRUE/FALSE       disable/enable sidecar monitor, default: FALSE"
     exit 0
 else
   echo "GraphQL endpoint: $GRAPHQL_URI"
   echo "Disable snark worker stopper: $DISABLESNARKWORKER"
-  echo "Disable sidebar monitor: $DISABLESIDEBAR"
+  echo "Disable sidecar monitor: $DISABLESIDECAR"
   while :; do
     MINA_STATUS=$(curl $GRAPHQL_URI -s --max-time 60 \
     -H 'content-type: application/json' \
@@ -243,13 +243,13 @@ else
       SYNCCOUNT=0
     fi
 
-    if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDEBAR" == "FALSE" ]]; then
+    if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDECAR" == "FALSE" ]]; then
       echo "Restarting mina-sidecar - only reported " $SIDECARREPORTING " times out in 10 mins and node in sync longer than 15 mins."
       SYNCCOUNT=0
       docker restart mina-sidecar
     fi
 
-    echo "Status:" $STAT, "Current Synced Count:" $SYNCCOUNT,  "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Catchup Count, Total:" $CATCHUPCOUNT $TOTALCATCHUPCOUNT, "Total Height Mismatch:" $TOTALHEIGHTOFFCOUNT, "Node Stuck Below Tip:" $TOTALSTUCKCOUNT
+    echo "Status:" $STAT, "Synced Count:" $SYNCCOUNT,  "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Catchup Count, Total:" $CATCHUPCOUNT $TOTALCATCHUPCOUNT, "Total Height Mismatch:" $TOTALHEIGHTOFFCOUNT, "Node Stuck Below Tip:" $TOTALSTUCKCOUNT
     sleep 300s
     test $? -gt 128 && break;
   done
