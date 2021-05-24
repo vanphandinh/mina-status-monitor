@@ -182,7 +182,7 @@ else
     DELTAVALIDATED="$(($HIGHESTUNVALIDATEDBLOCK-$HIGHESTBLOCK))"
     echo "DELTA VALIDATE: $DELTAVALIDATED"
     if [[ "$DELTAVALIDATED" -gt 5 ]]; then
-      echo "Node stuck validated block height delta more than 5 blocks. Difference from Max obvserved and max observied unvalidated:", $DELTAVALIDATED
+      echo "Node stuck validated block height delta more than 5 blocks."
       ((TOTALSTUCKCOUNT++))
       SYNCCOUNT=0
       docker restart mina
