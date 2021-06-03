@@ -144,7 +144,7 @@ else
 
     # Calculate whether block producer will run within the next 5 mins
     # If up for a block within 10 mins, stop snarking, resume on next pass
-    if [[ "$DISABLESNARKWORKER" == "FALSE" ]]; then
+    if [[ "$DISABLESNARKWORKER" == "FALSE" && "$STAT" == "\"SYNCED\"" ]]; then
       if [[ $NEXTPROP != null ]]; then
         NEXTPROP=$(echo $NEXTPROP | jq tonumber)
         NEXTPROP="${NEXTPROP::-3}"
@@ -162,14 +162,18 @@ else
           echo "Stopping the snark worker.."
           docker exec -t mina mina client set-snark-worker
           ((SNARKWORKERTURNEDOFF++))
-        elif [[ "$TIMEBEFORENEXTMIN" -ge 10 && "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
-            docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
-            docker exec -t mina mina client set-snark-work-fee $FEE
-            SNARKWORKERTURNEDOFF=0
+        else
+          if [[ "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
+              echo "Starting the snark worker.."
+              docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
+              docker exec -t mina mina client set-snark-work-fee $FEE
+              SNARKWORKERTURNEDOFF=0
+          fi
         fi
       else
         echo "You haven't won any slot in the current epoch, wait for the next epoch."
         if [[ "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
+          echo "Starting the snark worker.."
           docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
           docker exec -t mina mina client set-snark-work-fee $FEE
           SNARKWORKERTURNEDOFF=0
@@ -227,25 +231,25 @@ else
     if [[ "$CONNECTINGCOUNT" -gt 1 ]]; then
       echo "Restarting mina - too long in Connecting state (~10 mins)"
       docker restart mina
-      SNARKWORKERTURNEDOFF=1
       CONNECTINGCOUNT=0
       SYNCCOUNT=0
+      SNARKWORKERTURNEDOFF=1
     fi
 
     if [[ "$OFFLINECOUNT" -gt 3 ]]; then
       echo "Restarting mina - too long in Offline state (~20 mins)"
       docker restart mina
-      SNARKWORKERTURNEDOFF=1
       OFFLINECOUNT=0
       SYNCCOUNT=0
+      SNARKWORKERTURNEDOFF=1
     fi
 
     if [[ "$CATCHUPCOUNT" -gt 8 ]]; then
       echo "Restarting mina - too long in Catchup state (~45 mins)"
       docker restart mina
-      SNARKWORKERTURNEDOFF=1
       CATCHUPCOUNT=0
       SYNCCOUNT=0
+      SNARKWORKERTURNEDOFF=1
     fi
 
     if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDECAR" == "FALSE" ]]; then
