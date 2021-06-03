@@ -162,13 +162,11 @@ else
           echo "Stopping the snark worker.."
           docker exec -t mina mina client set-snark-worker
           ((SNARKWORKERTURNEDOFF++))
-        else
-          if [[ "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
+        elif [[ "$TIMEBEFORENEXTMIN" -ge 10 && "$SNARKWORKERTURNEDOFF" -gt 0 ]]; then
               echo "Starting the snark worker.."
               docker exec -t mina mina client set-snark-worker --address $SW_ADDRESS
               docker exec -t mina mina client set-snark-work-fee $FEE
               SNARKWORKERTURNEDOFF=0
-          fi
         fi
       else
         echo "You haven't won any slot in the current epoch, wait for the next epoch."
