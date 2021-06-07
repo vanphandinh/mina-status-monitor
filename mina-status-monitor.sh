@@ -187,7 +187,6 @@ else
       echo "Node stuck validated block height delta more than 5 blocks."
       ((TOTALSTUCKCOUNT++))
       SYNCCOUNT=0
-      SNARKWORKERTURNEDOFF=1
       docker restart mina
     fi
 
@@ -197,7 +196,6 @@ else
       echo "Blockchain length is behind Highest block length more than 5 blocks", $BCLENGTH, $HIGHESTBLOCK, $HIGHESTUNVALIDATEDBLOCK
       ((TOTALHEIGHTOFFCOUNT++))
       SYNCCOUNT=0
-      SNARKWORKERTURNEDOFF=1
       docker restart mina
     fi
 
@@ -207,6 +205,10 @@ else
       CATCHUPCOUNT=0
       ((SYNCCOUNT++))
     fi
+    
+    if [[ "$STAT" == "\"BOOTSTRAP\"" ]]; then
+      SNARKWORKERTURNEDOFF=1
+    fi    
 
     if [[ "$STAT" == "\"CONNECTING\"" ]]; then
       ((CONNECTINGCOUNT++))
@@ -231,7 +233,6 @@ else
       docker restart mina
       CONNECTINGCOUNT=0
       SYNCCOUNT=0
-      SNARKWORKERTURNEDOFF=1
     fi
 
     if [[ "$OFFLINECOUNT" -gt 3 ]]; then
@@ -239,7 +240,6 @@ else
       docker restart mina
       OFFLINECOUNT=0
       SYNCCOUNT=0
-      SNARKWORKERTURNEDOFF=1
     fi
 
     if [[ "$CATCHUPCOUNT" -gt 8 ]]; then
@@ -247,7 +247,6 @@ else
       docker restart mina
       CATCHUPCOUNT=0
       SYNCCOUNT=0
-      SNARKWORKERTURNEDOFF=1
     fi
 
     if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDECAR" == "FALSE" ]]; then
