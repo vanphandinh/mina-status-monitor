@@ -190,15 +190,6 @@ else
       docker restart mina
     fi
 
-    # If the node is catchup for the second time, the the blockchain length is more than 5 blocks behind
-    # 2 hours is enough for the node to sync
-    if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 5 && "$DELTAVALIDATED" -eq 0 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
-      echo "Blockchain length is behind Highest block length more than 5 blocks", $BCLENGTH, $HIGHESTBLOCK, $HIGHESTUNVALIDATEDBLOCK
-      ((TOTALHEIGHTOFFCOUNT++))
-      SYNCCOUNT=0
-      docker restart mina
-    fi
-
     if [[ "$STAT" == "\"SYNCED\"" ]]; then
       OFFLINECOUNT=0
       CONNECTINGCOUNT=0
@@ -220,12 +211,31 @@ else
       ((OFFLINECOUNT++))
       ((TOTALOFFLINECOUNT++))
       SYNCCOUNT=0
+
+      EXPLORER_STATUS=$(curl 'https://minaexplorer.com/all-blocks?canonical=True&limit=25' -s --max-time 60 \
+      -H 'content-type: application/json' \
+      --compressed)
+      LATEST_E_BLOCK=$(echo $EXPLORER_STATUS | jq .recordsFiltered)
+      if [[ "$(($LATEST_E_BLOCK - $BCLENGTH))" -gt 5 ]]; then
+        echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
+        docker restart mina
+        OFFLINECOUNT=0
+      fi
     fi
 
     if [[ "$STAT" == "\"CATCHUP\"" ]]; then
       ((CATCHUPCOUNT++))
       ((TOTALCATCHUPCOUNT++))
       SYNCCOUNT=0
+
+      # If the node is catchup for the second time, the the blockchain length is more than 5 blocks behind
+      # 2 hours is enough for the node to sync
+      if [[ "$(($HIGHESTBLOCK - $BCLENGTH))" -gt 5 && "$(($UPTIMESECS / $SECONDS_PER_HOUR))" -gt 2 ]]; then
+        echo "Blockchain length is behind Highest block length more than 5 blocks", $BCLENGTH, $HIGHESTBLOCK, $HIGHESTUNVALIDATEDBLOCK
+        ((TOTALHEIGHTOFFCOUNT++))
+        SYNCCOUNT=0
+        docker restart mina
+      fi
     fi
 
     if [[ "$CONNECTINGCOUNT" -gt 1 ]]; then
