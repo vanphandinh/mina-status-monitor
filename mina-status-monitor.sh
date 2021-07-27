@@ -142,7 +142,7 @@ else
     HIGHESTUNVALIDATEDBLOCK="$(echo $MINA_STATUS | jq .data.daemonStatus.highestUnvalidatedBlockLengthReceived)"
     SIDECARREPORTING="$(docker logs --since 10m mina-sidecar 2>&1 | grep -c 'Got block data')"
 
-    # Calculate whether block producer will run within the next 5 mins
+    # Calculate whether block producer will run within the next 10 mins
     # If up for a block within 10 mins, stop snarking, resume on next pass
     if [[ "$DISABLESNARKWORKER" == "FALSE" && "$STAT" == "\"SYNCED\"" ]]; then
       if [[ $NEXTPROP != null ]]; then
