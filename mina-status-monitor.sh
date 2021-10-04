@@ -260,7 +260,6 @@ else
 
     if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDECAR" == "FALSE" ]]; then
       echo "Restarting mina-sidecar - only reported " $SIDECARREPORTING " times out in 10 mins and node in sync longer than 15 mins."
-      SYNCCOUNT=0
       docker restart mina-sidecar
     fi
 
