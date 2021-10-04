@@ -130,7 +130,7 @@ else
 
     if [[ "$MINA_STATUS" == "" ]]; then
       echo "Cannot connect to the GraphQL endpoint $GRAPHQL_URI."
-      sleep 10s
+      sleep 3s
       continue
     fi
 
