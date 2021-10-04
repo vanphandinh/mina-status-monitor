@@ -212,10 +212,10 @@ else
       ((TOTALOFFLINECOUNT++))
       SYNCCOUNT=0
 
-      EXPLORER_STATUS=$(curl 'https://minaexplorer.com/all-blocks?canonical=True&limit=25' -s --max-time 60 \
+      EXPLORER_STATUS=$(curl 'https://api.minaexplorer.com' -s --max-time 60 \
       -H 'content-type: application/json' \
       --compressed)
-      LATEST_E_BLOCK=$(echo $EXPLORER_STATUS | jq .recordsFiltered)
+      LATEST_E_BLOCK=$(echo $EXPLORER_STATUS | jq .blockchainLength)
       if [[ "$(($LATEST_E_BLOCK - $BCLENGTH))" -gt 5 ]]; then
         echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
         docker restart mina
