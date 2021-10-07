@@ -205,6 +205,16 @@ else
       ((CONNECTINGCOUNT++))
       ((TOTALCONNECTINGCOUNT++))
       SYNCCOUNT=0
+
+      EXPLORER_STATUS=$(curl 'https://api.minaexplorer.com' -s --max-time 60 \
+      -H 'content-type: application/json' \
+      --compressed)
+      LATEST_E_BLOCK=$(echo $EXPLORER_STATUS | jq .blockchainLength)
+      if [[ "$(($LATEST_E_BLOCK - $BCLENGTH))" -gt 5 ]]; then
+        echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
+        docker restart mina
+        CONNECTINGCOUNT=0
+      fi
     fi
 
     if [[ "$STAT" == "\"OFFLINE\"" ]]; then
@@ -234,6 +244,7 @@ else
         echo "Blockchain length is behind Highest block length more than 5 blocks", $BCLENGTH, $HIGHESTBLOCK, $HIGHESTUNVALIDATEDBLOCK
         ((TOTALHEIGHTOFFCOUNT++))
         docker restart mina
+        CATCHUPCOUNT=0
       fi
     fi
 
