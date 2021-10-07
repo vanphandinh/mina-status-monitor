@@ -4,6 +4,7 @@ STAT=""
 CONNECTINGCOUNT=0
 OFFLINECOUNT=0
 CATCHUPCOUNT=0
+GRAPHQLFAILEDCOUNT=0
 TOTALCONNECTINGCOUNT=0
 TOTALOFFLINECOUNT=0
 TOTALSTUCKCOUNT=0
@@ -128,10 +129,22 @@ else
     LOGTIME=$(TZ=$TIMEZONE date +'(%Y-%m-%d %H:%M:%S)')
     echo $LOGTIME
 
+    # Restart mina node if cannot connect to the GraphQL endpoint more than 10 times
+    if [[ "$GRAPHQLFAILEDCOUNT" -gt 10 ]]; then
+      echo "Restarting mina - cannot connect to the GraphQL endpoint more than 10 times"
+      docker restart mina
+      GRAPHQLFAILEDCOUNT=0
+      SYNCCOUNT=0
+      continue
+    fi
+
     if [[ "$MINA_STATUS" == "" ]]; then
       echo "Cannot connect to the GraphQL endpoint $GRAPHQL_URI."
+      ((GRAPHQLFAILEDCOUNT++))
       sleep 3s
       continue
+    else
+      GRAPHQLFAILEDCOUNT=0
     fi
 
     STAT="$(echo $MINA_STATUS | jq .data.daemonStatus.syncStatus)"
@@ -188,6 +201,7 @@ else
       ((TOTALSTUCKCOUNT++))
       SYNCCOUNT=0
       docker restart mina
+      continue
     fi
 
     if [[ "$STAT" == "\"SYNCED\"" ]]; then
@@ -214,6 +228,7 @@ else
         echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
         docker restart mina
         CONNECTINGCOUNT=0
+        continue
       fi
     fi
 
@@ -230,6 +245,7 @@ else
         echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
         docker restart mina
         OFFLINECOUNT=0
+        continue
       fi
     fi
 
@@ -245,6 +261,7 @@ else
         ((TOTALHEIGHTOFFCOUNT++))
         docker restart mina
         CATCHUPCOUNT=0
+        continue
       fi
     fi
 
@@ -253,6 +270,7 @@ else
       docker restart mina
       CONNECTINGCOUNT=0
       SYNCCOUNT=0
+      continue
     fi
 
     if [[ "$OFFLINECOUNT" -gt 3 ]]; then
@@ -260,6 +278,7 @@ else
       docker restart mina
       OFFLINECOUNT=0
       SYNCCOUNT=0
+      continue
     fi
 
     if [[ "$CATCHUPCOUNT" -gt 8 ]]; then
@@ -267,6 +286,7 @@ else
       docker restart mina
       CATCHUPCOUNT=0
       SYNCCOUNT=0
+      continue
     fi
 
     if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDECAR" == "FALSE" ]]; then
