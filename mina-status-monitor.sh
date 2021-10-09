@@ -29,6 +29,7 @@ HIGHESTUNVALIDATEDBLOCK=0
 SIDECARREPORTING=0
 SYNCCOUNT=0
 DISABLESIDECAR=FALSE ### disable/enable mina-sidecar monitor
+JUSTRESTARTED=FALSE
 
 package=`basename "$0"`
 while test $# -gt 0; do
@@ -130,10 +131,11 @@ else
     echo $LOGTIME
 
     # Restart mina node if cannot connect to the GraphQL endpoint more than 10 times
-    if [[ "$GRAPHQLFAILEDCOUNT" -gt 10 ]]; then
+    if [[ "$GRAPHQLFAILEDCOUNT" -gt 10 && "$JUSTRESTARTED" == "FALSE" ]]; then
       echo "Restarting mina - cannot connect to the GraphQL endpoint more than 10 times"
       docker restart mina
       GRAPHQLFAILEDCOUNT=0
+      JUSTRESTARTED=TRUE
       SYNCCOUNT=0
       continue
     fi
@@ -145,6 +147,7 @@ else
       continue
     else
       GRAPHQLFAILEDCOUNT=0
+      JUSTRESTARTED=FALSE
     fi
 
     STAT="$(echo $MINA_STATUS | jq .data.daemonStatus.syncStatus)"
