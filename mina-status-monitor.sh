@@ -203,6 +203,7 @@ else
       echo "Node stuck validated block height delta more than 5 blocks."
       ((TOTALSTUCKCOUNT++))
       SYNCCOUNT=0
+      JUSTRESTARTED=TRUE
       docker restart mina
       continue
     fi
@@ -231,6 +232,7 @@ else
         echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
         docker restart mina
         CONNECTINGCOUNT=0
+        JUSTRESTARTED=TRUE
         continue
       fi
     fi
@@ -247,6 +249,7 @@ else
       if [[ "$(($LATEST_E_BLOCK - $BCLENGTH))" -gt 5 ]]; then
         echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
         docker restart mina
+        JUSTRESTARTED=TRUE
         OFFLINECOUNT=0
         continue
       fi
@@ -263,6 +266,7 @@ else
         echo "Blockchain length is behind Highest block length more than 5 blocks", $BCLENGTH, $HIGHESTBLOCK, $HIGHESTUNVALIDATEDBLOCK
         ((TOTALHEIGHTOFFCOUNT++))
         docker restart mina
+        JUSTRESTARTED=TRUE
         CATCHUPCOUNT=0
         continue
       fi
@@ -271,6 +275,7 @@ else
     if [[ "$CONNECTINGCOUNT" -gt 1 ]]; then
       echo "Restarting mina - too long in Connecting state (~10 mins)"
       docker restart mina
+      JUSTRESTARTED=TRUE
       CONNECTINGCOUNT=0
       SYNCCOUNT=0
       continue
@@ -279,6 +284,7 @@ else
     if [[ "$OFFLINECOUNT" -gt 3 ]]; then
       echo "Restarting mina - too long in Offline state (~20 mins)"
       docker restart mina
+      JUSTRESTARTED=TRUE
       OFFLINECOUNT=0
       SYNCCOUNT=0
       continue
@@ -287,6 +293,7 @@ else
     if [[ "$CATCHUPCOUNT" -gt 8 ]]; then
       echo "Restarting mina - too long in Catchup state (~45 mins)"
       docker restart mina
+      JUSTRESTARTED=TRUE
       CATCHUPCOUNT=0
       SYNCCOUNT=0
       continue
