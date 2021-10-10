@@ -130,8 +130,6 @@ else
 
     if [[ "$MINA_STATUS" == "" ]]; then
       echo "Cannot connect to the GraphQL endpoint $GRAPHQL_URI."
-      ((GRAPHQLFAILEDCOUNT++))
-      sleep 3s
       continue
     fi
 
@@ -189,7 +187,6 @@ else
       ((TOTALSTUCKCOUNT++))
       SYNCCOUNT=0
       docker restart mina
-      continue
     fi
 
     if [[ "$STAT" == "\"SYNCED\"" ]]; then
@@ -216,7 +213,6 @@ else
         echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
         docker restart mina
         CONNECTINGCOUNT=0
-        continue
       fi
     fi
 
@@ -233,7 +229,6 @@ else
         echo "Restarting mina - Offline state and behind the MinaExplorer more than 5 blocks"
         docker restart mina
         OFFLINECOUNT=0
-        continue
       fi
     fi
 
@@ -249,7 +244,6 @@ else
         ((TOTALHEIGHTOFFCOUNT++))
         docker restart mina
         CATCHUPCOUNT=0
-        continue
       fi
     fi
 
@@ -258,7 +252,6 @@ else
       docker restart mina
       CONNECTINGCOUNT=0
       SYNCCOUNT=0
-      continue
     fi
 
     if [[ "$OFFLINECOUNT" -gt 3 ]]; then
@@ -266,7 +259,6 @@ else
       docker restart mina
       OFFLINECOUNT=0
       SYNCCOUNT=0
-      continue
     fi
 
     if [[ "$CATCHUPCOUNT" -gt 8 ]]; then
@@ -274,7 +266,6 @@ else
       docker restart mina
       CATCHUPCOUNT=0
       SYNCCOUNT=0
-      continue
     fi
 
     if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDECAR" == "FALSE" ]]; then
