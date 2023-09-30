@@ -131,6 +131,7 @@ else
   echo "GraphQL endpoint: $GRAPHQL_URI"
   echo "Disable snark worker stopper: $DISABLESNARKWORKER"
   echo "Disable sidecar monitor: $DISABLESIDECAR"
+  echo "Disable external ip monitor: $DISABLE_EXTERNAL_IP"
   while :; do
     MINA_STATUS=$(curl $GRAPHQL_URI -s --max-time 60 \
     -H 'content-type: application/json' \
@@ -288,7 +289,9 @@ else
 
     if [[ "$DISABLE_EXTERNAL_IP" == "FALSE" ]]; then
       LATEST_EXTERNAL_IP=$(curl -s http://whatismyip.akamai.com)
-      if [[ "$EXTERNAL_IP" != "$LATEST_EXTERNAL_IP" ]]; then
+      if [[ "$EXTERNAL_IP" == "$LATEST_EXTERNAL_IP" ]]; then
+        echo "External IP: $EXTERNAL_IP"
+      else
         echo "External IP changed from $EXTERNAL_IP to $LATEST_EXTERNAL_IP."
         EXTERNAL_IP=$LATEST_EXTERNAL_IP
         docker restart mina
