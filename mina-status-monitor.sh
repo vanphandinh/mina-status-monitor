@@ -11,7 +11,7 @@ TOTALCATCHUPCOUNT=0
 TOTALHEIGHTOFFCOUNT=0
 TIMEZONE=Asia/Ho_Chi_Minh
 SNARKWORKERTURNEDOFF=1 ### assume snark worker not turned on for the first run
-DISABLESNARKWORKER=FALSE ### disable/enable snark worker
+DISABLESNARKWORKER=TRUE ### disable/enable snark worker
 SNARKWORKERSTOPPEDCOUNT=0
 readonly SECONDS_PER_MINUTE=60
 readonly MINUTES_PER_HOUR=60
@@ -28,6 +28,8 @@ HIGHESTUNVALIDATEDBLOCK=0
 SIDECARREPORTING=0
 SYNCCOUNT=0
 DISABLESIDECAR=FALSE ### disable/enable mina-sidecar monitor
+DISABLE_EXTERNAL_IP=TRUE ### disable/enable external ip monitor
+EXTERNAL_IP=$(curl -s http://whatismyip.akamai.com)
 
 package=`basename "$0"`
 while test $# -gt 0; do
@@ -42,8 +44,9 @@ while test $# -gt 0; do
       echo "-t, --timezone=TIMEZONE                 specify time zone for the log time, default: Asia/Ho_Chi_Minh"
       echo "-a, --snark-address=ADDRESS             specify snark worker address"
       echo "-f, --snark-fee=FEE                     specify snark worker fee, default: 0.001 mina"
-      echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker stopper, default: FALSE"
+      echo "-sw, --disable-snark-worker=TRUE/FALSE  disable/enable snark worker stopper, default: TRUE"
       echo "-sc, --disable-sidecar=TRUE/FALSE       disable/enable sidecar monitor, default: FALSE"
+      echo "-eip, --disable-external-ip=TRUE/FALSE  disable/enable external ip monitor, default: TRUE"
       exit 0
       ;;
     -t)
@@ -71,6 +74,15 @@ while test $# -gt 0; do
       ;;
     --disable-sidecar*)
         DISABLESIDECAR=`echo $1 | sed -e 's/^[^=]*=//g'`
+      shift
+      ;;
+    -eip)
+      shift
+        DISABLE_EXTERNAL_IP=$1
+      shift
+      ;;
+    --disable-external-ip*)
+        DISABLE_EXTERNAL_IP=`echo $1 | sed -e 's/^[^=]*=//g'`
       shift
       ;;
     -f)
@@ -272,6 +284,15 @@ else
     if [[ "$SIDECARREPORTING" -lt 3 && "$SYNCCOUNT" -gt 2 && "$DISABLESIDECAR" == "FALSE" ]]; then
       echo "Restarting mina-sidecar - only reported " $SIDECARREPORTING " times out in 10 mins and node in sync longer than 15 mins."
       docker restart mina-sidecar
+    fi
+
+    if [[ "$DISABLE_EXTERNAL_IP" == "FALSE" ]]; then
+      LATEST_EXTERNAL_IP=$(curl -s http://whatismyip.akamai.com)
+      if [[ "$EXTERNAL_IP" != "$LATEST_EXTERNAL_IP" ]]; then
+        echo "External IP changed from $EXTERNAL_IP to $LATEST_EXTERNAL_IP."
+        EXTERNAL_IP=$LATEST_EXTERNAL_IP
+        docker restart mina
+      fi
     fi
 
     echo "Status:" $STAT, "Synced Count:" $SYNCCOUNT,  "Connecting Count, Total:" $CONNECTINGCOUNT $TOTALCONNECTINGCOUNT, "Offline Count, Total:" $OFFLINECOUNT $TOTALOFFLINECOUNT, "Catchup Count, Total:" $CATCHUPCOUNT $TOTALCATCHUPCOUNT, "Total Height Mismatch:" $TOTALHEIGHTOFFCOUNT, "Node Stuck Below Tip:" $TOTALSTUCKCOUNT
