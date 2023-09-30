@@ -11,7 +11,8 @@ If it's incorrect for you, please change it to similar above
 # Environments
 
 - `DISABLE_SIDECAR` - disable/enable the mina sidecar monitor, default: FALSE
-- `DISABLE_SNARK_WORKER` - disable/enable the snark worker stopper, default: FALSE
+- `DISABLE_SNARK_WORKER` - disable/enable the snark worker stopper, default: TRUE
+- `DISABLE_EXTERNAL_IP` - disable/enable external ip monitor, default: TRUE
 - `SNARK_ADDRESS` - snark worker address, default: B62qkiJuTwdJBARAPGAvStuEa37kZVZPyDrQoUCuM7WQUmZZydNBmTf
 - `SNARK_FEE` - snark worker fee (mina), default: 0.001
 - `TIMEZONE` - log timezone, default: Asia/Ho_Chi_Minh
