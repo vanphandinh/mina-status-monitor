@@ -18,4 +18,4 @@ services:
 networks:
   mina-network:
     name: mina-network
-    driver: bridge
+    external: true
